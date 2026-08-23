@@ -33,16 +33,10 @@ const comparatorExp = function(a, b) {
     return 0;
   }
 }
-const comparatorArrow = (a, b) => {
-  if (a.length > b.length) {
-    return 1;
-  } else if (a.length < b.length) {
-    return -1;
-  } else {
-    return 0;
-  }
-}
+const comparatorArrow = (a, b) => a.length > b.length ? 1 : (a.length < b.length ? -1 : 0);
+
 console.log("Result Dec, Exp, Arrow:", comparatorDec("apple", "banana"), comparatorExp("apple", "banana"), comparatorArrow("apple", "banana"));
 
-const maxString = strings.reduce((max, curr) => curr.length > max.length ? curr : max);
+const maxString = strings.reduce((max, curr) => comparatorDec(curr, max) === 1 ? curr : max);
+
 console.log("Longest string:", maxString);
