@@ -23,7 +23,7 @@ async function askAi(prompt) {
 }
 
 async function main() {
-  const prompt = "Напиши что такое REST API и как его использовать в JavaScript, дай все коды ответов сервера и их расшифровку, а также все метододы REST";
+  const prompt = "Напиши что такое REST API и как его использовать в JavaScript, дай все коды ответов сервера и их расшифровку, а также все методы REST";
 
   const aiResponse = await askAi(prompt);
 
