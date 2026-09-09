@@ -1,6 +1,8 @@
 [
   {
-    "name": "milk",
-    "count": 30
+    "name": "eee",
+    "count": 12,
+    "price": 1221,
+    "expDate": "23-22"
   }
 ]
