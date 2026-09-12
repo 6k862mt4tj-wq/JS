@@ -1,8 +1,14 @@
 [
   {
-    "name": "eee",
-    "count": 12,
-    "price": 1221,
-    "expDate": "23-22"
+    "name": "cheese",
+    "count": 27,
+    "price": 222,
+    "expDate": "2026-10-10"
+  },
+  {
+    "name": "milk",
+    "count": 30,
+    "price": 128,
+    "expDate": "2026-10-01"
   }
 ]
