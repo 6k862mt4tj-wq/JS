@@ -16,7 +16,7 @@ async function writeToCsvFile(filePath, data) {
  
   const csvData = data
     .map((p) => `"${p.name}",${p.count},${p.price},"${p.expDate}"`)
-    .join("\n");
+    .join("\r\n");
   await writeFile(filePath, csvHeader + csvData, "utf-8");
 }
 
