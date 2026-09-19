@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
  
 async function askAi(prompt) {
   const genAi = new GoogleGenAI({
-    apiKey: process.env.API_KEY
+    apiKey: process.env.GEMINI_API_KEY
   });
  
   const response = await genAi.models.generateContent({

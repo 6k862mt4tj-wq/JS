@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Умный холодильник с AI Шеф-поваром."> 
+  <title>Умный холодильник (AI Edition)</title>
+  <link rel="icon" href="FRIDGE.jpg" />
+
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; background-color: #f9f9f9; }
+    h1 { text-align: center; color: #333; }
+    .container { display: flex; gap: 40px; flex-wrap: wrap; }
+    .box { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .form-section { flex: 1; min-width: 300px; }
+    .table-section { flex: 2; min-width: 400px; }
+    .ai-section { flex-basis: 100%; margin-top: 20px; }
+    
+    label { display: block; margin-bottom: 12px; font-weight: bold; font-size: 14px; color: #555; }
+    input { margin-top: 5px; width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    button { margin-top: 15px; padding: 12px; width: 100%; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; transition: background 0.2s; }
+    button:hover { background-color: #0056b3; }
+    #message { margin-top: 15px; font-weight: bold; min-height: 20px; }
+    
+    hr { margin: 20px 0; border: 0; border-top: 1px solid #eee; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+    th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    
+    .ai-response { margin-top: 20px; padding: 15px; background: #f4f4f4; border-radius: 4px; display: none; white-space: pre-wrap; line-height: 1.5; font-family: inherit; }
+  </style>
+
+</head>
+<body>
+  <h1>Умный холодильник</h1>
+  
+  <div class="container">
+    <div class="box form-section">
+      <h2>Панель управления</h2>
+      <form id="fridgeForm">
+        <label style="color: #007bff;">Ваше имя (Авторизация):
+          <input type="text" id="globalUsername" name="username" placeholder="John (User) или Bill (Admin)" required>
+        </label>
+        <hr>
+        <label>Наименование продукта: <input type="text" name="name" required></label>
+        <label>Количество (0 для удаления): <input type="number" name="count" required></label>
+        <label>Цена за шт ($): <input type="number" name="price" step="0.1" required></label>
+        <label>Срок годности: <input type="date" name="expDate" required></label>
+        <button type="submit">Применить</button>
+      </form>
+      <p id="message"></p>
+    </div>
+
+    <div class="box table-section">
+      <h2>Текущее содержимое</h2>
+      <table id="fridgeTable">
+        <thead>
+          <tr>
+            <th>Наименование</th>
+            <th>Кол-во</th>
+            <th>Цена ($)</th>
+            <th>Годен до</th>
+          </tr>
+        </thead>
+        <tbody>
+        
+        </tbody>
+      </table>
+    </div>
+
+    <div class="box ai-section">
+      <h2 style="color: #28a745;">👨‍🍳 AI Шеф-повар</h2>
+      <form id="recipeForm" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+        <label style="flex: 1; min-width: 200px;">Какое блюдо хотите приготовить?
+          <input type="text" name="dishTitle" placeholder="Например: Паста карбонара" required>
+        </label>
+        <button type="submit" style="width: auto; background-color: #28a745; margin-top: 0; padding: 10px 20px;">Спросить рецепт</button>
+      </form>
+      <div id="aiResponse" class="ai-response"></div>
+    </div>
+  </div>
+
+  <script>
+    async function loadFridgeData() {
+      try {
+        const response = await fetch("/api/products");
+        const products = await response.json();
+        const tbody = document.querySelector("#fridgeTable tbody");
+        
+        tbody.innerHTML = ""; 
+        if (products.length === 0) {
+          tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color: #888;'>Холодильник пуст</td></tr>";
+          return;
+        }
+
+        products.forEach(p => {
+          tbody.innerHTML += `<tr>
+            <td>${p.name}</td>
+            <td>${p.count}</td>
+            <td>${p.price}</td>
+            <td>${p.expDate}</td>
+          </tr>`;
+        });
+      } catch (err) {
+        console.error("Ошибка загрузки:", err);
+      }
+    }
+
+    document.getElementById("fridgeForm").addEventListener("submit", async function(event) {
+      event.preventDefault(); 
+      const formData = new FormData(event.target);
+      
+      const dataObj = {
+        username: formData.get("username").trim(),
+        name: formData.get("name"),
+        count: Number(formData.get("count")),
+        price: Number(formData.get("price")),
+        expDate: formData.get("expDate")
+      };
+
+      const msgEl = document.getElementById("message");
+      msgEl.innerText = "Обработка...";
+      msgEl.style.color = "black";
+
+      try {
+        const response = await fetch("/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataObj)
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          msgEl.style.color = "green";
+          msgEl.innerText = result.message;
+          const currentUsername = formData.get("username");
+          event.target.reset(); 
+          document.getElementById("globalUsername").value = currentUsername;
+          loadFridgeData();
+        } else {
+          msgEl.style.color = "red";
+          msgEl.innerText = result.error;
+        }
+      } catch (err) {
+        msgEl.style.color = "red";
+        msgEl.innerText = "Ошибка соединения.";
+      }
+    });
+
+    document.getElementById("recipeForm").addEventListener("submit", async function(event) {
+      event.preventDefault();
+      
+      const username = document.getElementById("globalUsername").value.trim();
+      const dishTitle = new FormData(event.target).get("dishTitle");
+      const responseBox = document.getElementById("aiResponse");
+      
+      responseBox.style.display = "block";
+      responseBox.innerHTML = "<i>Нейросеть составляет рецепт... Пожалуйста, подождите.</i>";
+
+      try {
+        const response = await fetch("/api/recipe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, dishTitle })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          responseBox.innerText = result.recipe;
+        } else {
+          responseBox.innerHTML = `<span style="color: red;">Ошибка: ${result.error}</span>`;
+        }
+      } catch (err) {
+        responseBox.innerHTML = `<span style="color: red;">Ошибка соединения с сервером</span>`;
+      }
+    });
+
+    loadFridgeData();
+  </script>
+</body>
+</html>
