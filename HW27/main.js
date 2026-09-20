@@ -45,7 +45,7 @@ const server = http.createServer(async (req, res) => {
     let rawBody = "";
     req.on("data", chunk => rawBody += chunk.toString());
     req.on("end", async () => {
-      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.setHeader(200, { "Content-Type": "application/json; charset=utf-8" });
 
       try {
         const rawItem = JSON.parse(rawBody);
@@ -117,7 +117,7 @@ const server = http.createServer(async (req, res) => {
     req.on("data", chunk => rawBody += chunk.toString());
 
     req.on("end", async () => {
-      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.setHeader(200, { "Content-Type": "application/json; charset=utf-8" });
       try {
         const { username, dishTitle } = JSON.parse(rawBody);
 
