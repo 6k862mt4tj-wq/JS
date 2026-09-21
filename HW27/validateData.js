@@ -41,6 +41,21 @@ const schemas = [
     },
     required: ["name", "count", "price", "expDate"],
     additionalProperties: false
+  },
+  {
+    $id: "dish",
+    type: "object",
+    properties: {
+      username: { type: "string", minLength: 1 },
+      dishTitle: { 
+        type: "string", 
+        minLength: 2, 
+        maxLength: 100, 
+        pattern: "^[a-zA-Zа-яА-ЯёЁ0-9\\s\\-]+$" 
+      }
+    },
+    required: ["username", "dishTitle"],
+    additionalProperties: false
   }
 ];
 

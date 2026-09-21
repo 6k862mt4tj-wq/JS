@@ -8,6 +8,7 @@ import { readFromJsonFile, writeToJsonFile, writeToCsvFile, readHtmlFile } from 
 import { findProductIndex, addOrUpdateProduct, removeProduct } from "./arrayService.js";
 import { createBasePromptByRole, createPrompt } from "./promptService.js";
 import { askAi } from "./aiService.js";
+import { readJson } from "./utils.js";
 
 let fridge = [];
 async function loadInitialData() {
@@ -52,114 +53,106 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify(fridge));
   }
 
-  // Изменение данных о продуктах (добавление, обновление, удаление)
+ // Изменение данных о продуктах (добавление, обновление, удаление)
   if (req.method === "POST" && req.url === "/api/products") {
-    let rawBody = "";
-    req.on("data", chunk => {
-      rawBody += chunk.toString();
-      if (rawBody.length > 1024 * 1024) req.destroy(new Error("Payload Too Large"));
-    });
-    req.on("end", async () => {
-      res.statusCode = 200;
-      res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
 
-      try {
-        const rawItem = JSON.parse(rawBody);
-        const check = validateData("product", rawItem);
-        if (!check.isValid) {
-          res.statusCode = 400; 
-          return res.end(JSON.stringify({ error: check.errorMessage }));
-        }
+    try {
+      const rawBody = await readJson(req);
+      const check = validateData("product", rawBody);
+      if (!check.isValid) {
+        res.statusCode = 400; 
+        return res.end(JSON.stringify({ error: check.errorMessage }));
+      }
 
-        const { username, name, count, price, expDate } = check.data;
-        const currentUser = getAuthenticatedUser(username);
+      const { username, name, count, price, expDate } = check.data;
+      const currentUser = getAuthenticatedUser(username);
 
-        if (currentUser.role === ROLES.GUEST) {
-          res.statusCode = 403; 
+      if (currentUser.role === ROLES.GUEST) {
+        res.statusCode = 403; 
+        return res.end(JSON.stringify({ 
+          error: `Пользователь "${currentUser.name}" (GUEST) может только просматривать данные.` 
+        }));
+      }
+
+      const productIdx = findProductIndex(fridge, name, expDate);
+      const exists = productIdx !== -1;
+
+      // Логика удаления (Tombstone)
+      if (count === 0) {
+        if (currentUser.role !== ROLES.ADMIN) {
+          res.statusCode = 403;
           return res.end(JSON.stringify({ 
-            error: `Пользователь "${currentUser.name}" (GUEST) может только просматривать данные.` 
+            error: `Пользователь "${currentUser.name}" (${currentUser.role}) не имеет прав на удаление.` 
           }));
         }
 
-        const productIdx = findProductIndex(fridge, name, expDate);
-        const exists = productIdx !== -1;
-
-        if (count === 0) {
-          if (currentUser.role !== ROLES.ADMIN) {
-            res.statusCode = 403;
-            return res.end(JSON.stringify({ 
-              error: `Пользователь "${currentUser.name}" (${currentUser.role}) не имеет прав на удаление.` 
-            }));
-          }
-
-          if (exists) {
-            removeProduct(fridge, productIdx);
-            await writeToJsonFile(JSON_FILE, fridge);
-            await writeToCsvFile(CSV_FILE, fridge);
-            return res.end(JSON.stringify({ message: `Партия "${name}" удалена администратором.` }));
-          } else {
-            res.statusCode = 404;
-            return res.end(JSON.stringify({ error: "Товар для удаления не найден." }));
-          }
+        if (exists) {
+          removeProduct(fridge, productIdx);
+          await writeToJsonFile(JSON_FILE, fridge);
+          await writeToCsvFile(CSV_FILE, fridge);
+          res.statusCode = 200;
+          return res.end(JSON.stringify({ message: `Партия "${name}" удалена администратором.` }));
+        } else {
+          res.statusCode = 404;
+          return res.end(JSON.stringify({ error: "Товар для удаления не найден." }));
         }
+      }
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (new Date(expDate) < today) {
-          res.statusCode = 400;
-          return res.end(JSON.stringify({ error: `Срок годности (${expDate}) истек.` }));
-        }
-
-        addOrUpdateProduct(fridge, productIdx, name, count, price, expDate);
-        
-        await writeToJsonFile(JSON_FILE, fridge);
-        await writeToCsvFile(CSV_FILE, fridge);
-
-        return res.end(JSON.stringify({ 
-          message: exists ? "Данные обновлены." : "Добавлена новая партия." 
-        }));
-
-      } catch (error) {
+      // Логика добавления / обновления
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (new Date(expDate) < today) {
         res.statusCode = 400;
-        return res.end(JSON.stringify({ error: "Некорректный формат JSON запроса." }));
+        return res.end(JSON.stringify({ error: `Срок годности (${expDate}) истек.` }));
       }
-    });
-    return;
-  }
 
-  // Запрос к AI Шеф-повару
-  if (req.method === "POST" && req.url === "/api/recipe") {
-    let rawBody = "";
-    req.on("data", chunk => {
-      rawBody += chunk.toString();
-      if (rawBody.length > 1024 * 1024) req.destroy(new Error("Payload Too Large"));
-    });
+      addOrUpdateProduct(fridge, productIdx, name, count, price, expDate);
+      await writeToJsonFile(JSON_FILE, fridge);
+      await writeToCsvFile(CSV_FILE, fridge);
 
-    req.on("end", async () => {
       res.statusCode = 200;
-      res.setHeader("Content-Type", "application/json; charset=utf-8");
-      try {
-        const { username, dishTitle } = JSON.parse(rawBody);
+      return res.end(JSON.stringify({ 
+        message: exists ? "Данные обновлены." : "Добавлена новая партия." 
+      }));
 
-        if (!dishTitle) {
-          res.statusCode = 400;
-          return res.end(JSON.stringify({ error: "Не указано название блюда." }));
-        }
+    } catch (error) {
+      
+      res.statusCode = error.status || 500;
+      return res.end(JSON.stringify({ error: error.message || "Ошибка обработки данных продукта" }));
+    }
+  } 
 
-        const currentUser = getAuthenticatedUser(username);
-        const basePrompt = createBasePromptByRole(currentUser);
-        const finalPrompt = createPrompt(basePrompt, dishTitle, fridge);
-        const aiResponse = await askAi(finalPrompt);
-
-        return res.end(JSON.stringify({ recipe: aiResponse }));
-      } catch (error) {
-        res.statusCode = 500;
-        return res.end(JSON.stringify({ error: error.message }));
+  // Запрос рецепта у нейросети
+  if (req.method === "POST" && req.url === "/api/recipe") {
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    
+    try {
+      const rawData = await readJson(req);
+      const check = validateData("dish", rawData);
+      
+      if (!check.isValid) {
+        res.statusCode = 400;
+        return res.end(JSON.stringify({ error: check.errorMessage }));
       }
-    });
-    return;
-  }
-  res.writeHead(404, { "Content-Type": "application/json; charset=utf-8" });
+
+      const { username, dishTitle } = check.data; 
+      const currentUser = getAuthenticatedUser(username);
+      const basePrompt = createBasePromptByRole(currentUser);
+      const finalPrompt = createPrompt(basePrompt, dishTitle, fridge);
+      const aiResponse = await askAi(finalPrompt);
+
+      res.statusCode = 200;
+      return res.end(JSON.stringify({ recipe: aiResponse }));
+
+    } catch (error) {
+      res.statusCode = error.status || 500; 
+      return res.end(JSON.stringify({ error: error.message || "Внутренняя ошибка сервера" }));
+    }
+  } 
+
+  res.statusCode = 404;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.end(JSON.stringify({ error: "Маршрут не найден" }));
 });
 
