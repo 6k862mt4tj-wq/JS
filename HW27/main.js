@@ -3,7 +3,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { JSON_FILE, CSV_FILE, ROLES, PORT, INDEX_PATH } from "./config.js";
 import { getAuthenticatedUser } from "./authService.js";
-import { validateProductObj } from "./validService.js";
+import { validateData } from "./validateData.js";
 import { readFromJsonFile, writeToJsonFile, writeToCsvFile, readHtmlFile } from "./fileService.js";
 import { findProductIndex, addOrUpdateProduct, removeProduct } from "./arrayService.js";
 import { createBasePromptByRole, createPrompt } from "./promptService.js";
@@ -13,7 +13,7 @@ let fridge = [];
 async function loadInitialData() {
   const rawData = await readFromJsonFile(JSON_FILE);
   rawData.forEach((item) => {
-    const check = validateProductObj(item);
+    const check = validateData("product", item);
     if (check.isValid && check.data.count > 0) {
       fridge.push(check.data);
     }
@@ -65,7 +65,7 @@ const server = http.createServer(async (req, res) => {
 
       try {
         const rawItem = JSON.parse(rawBody);
-        const check = validateProductObj(rawItem);
+        const check = validateData("product", rawItem);
         if (!check.isValid) {
           res.statusCode = 400; 
           return res.end(JSON.stringify({ error: check.errorMessage }));
