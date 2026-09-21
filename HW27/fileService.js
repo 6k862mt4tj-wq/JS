@@ -1,19 +1,29 @@
 import { writeFile, readFile } from "node:fs/promises";
 
-export async function writeToJsonFile(filePath, data) {
-  await writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+let writeQueue = Promise.resolve();
+export function writeToJsonFile(filePath, data) {
+  writeQueue = writeQueue.then(async () => {
+    await writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+  }).catch(console.error);
+  return writeQueue;
 }
 
-export async function writeToCsvFile(filePath, data) {
+export function writeToCsvFile(filePath, data) {
+  writeQueue = writeQueue.then(async () => {
     if (!Array.isArray(data)) {
         console.error("[!] Ошибка записи CSV: для экспорта ожидался массив.");
         return; 
     }
-  const csvHeader = "Наименование,Количество,Цена,Срок_годности\n";
-  const csvData = data
-    .map((p) => `"${p.name}",${p.count},${p.price},"${p.expDate}"`)
-    .join("\n");
-  await writeFile(filePath, csvHeader + csvData, "utf-8");
+    const csvHeader = "Наименование,Количество,Цена,Срок_годности\n";
+    const csvData = data
+      .map((p) => {
+          const escapedName = p.name.replace(/"/g, '""');
+          return `"${escapedName}",${p.count},${p.price},"${p.expDate}"`;
+      })
+      .join("\n");
+    await writeFile(filePath, csvHeader + csvData, "utf-8");
+  }).catch(console.error);
+  return writeQueue;
 }
 
 export async function readFromJsonFile(filePath) {

@@ -24,7 +24,7 @@
     
     hr { margin: 20px 0; border: 0; border-top: 1px solid #eee; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
-    th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; }
+    th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: center; }
     th { background-color: #f2f2f2; }
     
     .ai-response { margin-top: 20px; padding: 15px; background: #f4f4f4; border-radius: 4px; display: none; white-space: pre-wrap; line-height: 1.5; font-family: inherit; }
@@ -60,6 +60,7 @@
             <th>Кол-во</th>
             <th>Цена ($)</th>
             <th>Годен до</th>
+            <th>Действия</th>
           </tr>
         </thead>
         <tbody>
@@ -89,7 +90,7 @@
         
         tbody.innerHTML = ""; 
         if (products.length === 0) {
-          tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color: #888;'>Холодильник пуст</td></tr>";
+          tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color: #888;'>Холодильник пуст</td></tr>";
           return;
         }
 
@@ -99,6 +100,7 @@
             <td>${p.count}</td>
             <td>${p.price}</td>
             <td>${p.expDate}</td>
+            <td><button type="button" onclick="deleteProduct('${p.name.replace(/'/g, "\\'")}', '${p.expDate}')" style="margin: 0; padding: 5px 10px; background-color: white; font-size: 20px; width: auto;">🗑️</button></td>
           </tr>`;
         });
       } catch (err) {
@@ -106,47 +108,76 @@
       }
     }
 
-    document.getElementById("fridgeForm").addEventListener("submit", async function(event) {
-      event.preventDefault(); 
-      const formData = new FormData(event.target);
-      
-      const dataObj = {
-        username: formData.get("username").trim(),
-        name: formData.get("name"),
-        count: Number(formData.get("count")),
-        price: Number(formData.get("price")),
-        expDate: formData.get("expDate")
-      };
+async function sendProductRequest(dataObj, pendingText) {
+  const msgEl = document.getElementById("message");
+  msgEl.innerText = pendingText;
+  msgEl.style.color = "black";
 
-      const msgEl = document.getElementById("message");
-      msgEl.innerText = "Обработка...";
-      msgEl.style.color = "black";
-
-      try {
-        const response = await fetch("/api/products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataObj)
-        });
-
-        const result = await response.json();
-        
-        if (response.ok) {
-          msgEl.style.color = "green";
-          msgEl.innerText = result.message;
-          const currentUsername = formData.get("username");
-          event.target.reset(); 
-          document.getElementById("globalUsername").value = currentUsername;
-          loadFridgeData();
-        } else {
-          msgEl.style.color = "red";
-          msgEl.innerText = result.error;
-        }
-      } catch (err) {
-        msgEl.style.color = "red";
-        msgEl.innerText = "Ошибка соединения.";
-      }
+  try {
+    const response = await fetch("/api/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dataObj)
     });
+
+    const result = await response.json();
+    
+    if (response.ok) {
+      msgEl.style.color = "green";
+      msgEl.innerText = result.message;
+      loadFridgeData(); 
+      return true;     
+    } else {
+      msgEl.style.color = "red";
+      msgEl.innerText = result.error;
+      return false;
+    }
+  } catch (err) {
+    msgEl.style.color = "red";
+    msgEl.innerText = "Ошибка соединения.";
+    return false;
+  }
+}
+
+async function deleteProduct(name, expDate) {
+  const username = document.getElementById("globalUsername").value.trim();
+  if (!username) {
+    alert("Укажите Ваше имя (Авторизация) для удаления продукта.");
+    return;
+  }
+  if (!confirm(`Удалить продукт "${name}"?`)) return;
+
+  const dataObj = {
+    username: username,
+    name: name,
+    count: 0,
+    price: 0, 
+    expDate: expDate
+  };
+
+  await sendProductRequest(dataObj, "Удаление...");
+}
+
+document.getElementById("fridgeForm").addEventListener("submit", async function(event) {
+  event.preventDefault(); 
+  const formData = new FormData(event.target);
+  
+  const dataObj = {
+    username: formData.get("username").trim(),
+    name: formData.get("name"),
+    count: Number(formData.get("count")),
+    price: Number(formData.get("price")),
+    expDate: formData.get("expDate")
+  };
+
+  const isSuccess = await sendProductRequest(dataObj, "Обработка...");
+  
+  if (isSuccess) {
+    const currentUsername = formData.get("username");
+    event.target.reset(); 
+    document.getElementById("globalUsername").value = currentUsername;
+  }
+});
 
     document.getElementById("recipeForm").addEventListener("submit", async function(event) {
       event.preventDefault();

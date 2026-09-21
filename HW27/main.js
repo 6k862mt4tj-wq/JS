@@ -1,4 +1,6 @@
 import http from "node:http";
+import path from "node:path";
+import { readFile } from "node:fs/promises";
 import { JSON_FILE, CSV_FILE, ROLES, PORT, INDEX_PATH } from "./config.js";
 import { getAuthenticatedUser } from "./authService.js";
 import { validateProductObj } from "./validService.js";
@@ -7,7 +9,6 @@ import { findProductIndex, addOrUpdateProduct, removeProduct } from "./arrayServ
 import { createBasePromptByRole, createPrompt } from "./promptService.js";
 import { askAi } from "./aiService.js";
 
-// Загрузка данных из JSON файла 
 let fridge = [];
 async function loadInitialData() {
   const rawData = await readFromJsonFile(JSON_FILE);
@@ -34,6 +35,17 @@ const server = http.createServer(async (req, res) => {
     return res.end(html);
   }
 
+  // Статические файлы
+  if (req.method === "GET" && req.url === "/FRIDGE.jpg") {
+    try {
+      const img = await readFile(path.resolve("FRIDGE.jpg"));
+      res.writeHead(200, { "Content-Type": "image/jpeg" });
+      return res.end(img);
+    } catch (e) {
+      // Игнорируем и проваливаемся в 404
+    }
+  }
+
   // Холодильник API - Получение списка продуктов
   if (req.method === "GET" && req.url === "/api/products") {
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
@@ -43,9 +55,13 @@ const server = http.createServer(async (req, res) => {
   // Изменение данных о продуктах (добавление, обновление, удаление)
   if (req.method === "POST" && req.url === "/api/products") {
     let rawBody = "";
-    req.on("data", chunk => rawBody += chunk.toString());
+    req.on("data", chunk => {
+      rawBody += chunk.toString();
+      if (rawBody.length > 1024 * 1024) req.destroy(new Error("Payload Too Large"));
+    });
     req.on("end", async () => {
-      res.setHeader(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
 
       try {
         const rawItem = JSON.parse(rawBody);
@@ -114,10 +130,14 @@ const server = http.createServer(async (req, res) => {
   // Запрос к AI Шеф-повару
   if (req.method === "POST" && req.url === "/api/recipe") {
     let rawBody = "";
-    req.on("data", chunk => rawBody += chunk.toString());
+    req.on("data", chunk => {
+      rawBody += chunk.toString();
+      if (rawBody.length > 1024 * 1024) req.destroy(new Error("Payload Too Large"));
+    });
 
     req.on("end", async () => {
-      res.setHeader(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
       try {
         const { username, dishTitle } = JSON.parse(rawBody);
 
