@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Умный холодильник</title>
+</head>
+<body>
+
+<h1>Умный холодильник</h1>
+
+<form id="searchForm">
+    <div>
+        <label for="userName">Имя пользователя:</label>
+        <input
+            type="text"
+            id="userName"
+            name="userName"
+            placeholder="Например, Bill"
+            autocomplete="off"
+        >
+    </div>
+
+    <br>
+
+    <div>
+        <label for="dishTitle">Название блюда:</label>
+        <input
+            type="text"
+            id="dishTitle"
+            name="dishTitle"
+            placeholder="Например, борщ"
+            autocomplete="off"
+        >
+    </div>
+
+    <br>
+
+    <button type="submit">Искать</button>
+</form>
+
+<hr>
+
+<h2>Результат</h2>
+<pre id="result">Здесь появится ответ</pre>
+
+<dialog id="errorModal">
+    <h2>Ошибка</h2>
+    <p id="errorMessage"></p>
+    <button type="button" id="closeModal">Закрыть</button>
+</dialog>
+
+<dialog id="systemModal">
+    <h2 id="systemModalTitle">Сообщение</h2>
+    <p id="systemModalMessage"></p>
+    <button type="button" id="closeSystemModal">Понятно</button>
+</dialog>
+
+<script type="module" src="./main.js"></script>
+
+</body>
+</html>
