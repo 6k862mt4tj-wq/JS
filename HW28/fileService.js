@@ -3,6 +3,6 @@ export async function readFromJsonFile(filePath) {
     if(!response.ok){
         throw new Error("File not found");
     }
-    return await response.json()
+    return response.json()
 
 }

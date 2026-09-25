@@ -43,7 +43,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "Content-Type": "image/jpeg" });
       return res.end(img);
     } catch (e) {
-      // Игнорируем и проваливаемся в 404
+      
     }
   }
 
