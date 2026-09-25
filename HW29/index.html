@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список продуктов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+        input, button {
+            padding: 8px;
+            font-size: 16px;
+        }
+        ul {
+            margin-top: 20px;
+            padding-left: 20px;
+        }
+        li {
+            font-size: 18px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .bought {
+            text-decoration: line-through;
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Список продуктов</h1>
+
+    <input id="productInput" type="text" placeholder="Название продукта">
+    <button id="addButton">Добавить</button>
+
+    <ul id="productList"></ul>
+
+    <script>
+        
+        const input = document.getElementById("productInput");
+        const button = document.getElementById("addButton");
+        const list = document.getElementById("productList");
+
+        function addProduct() {
+            
+            const productName = input.value.trim();
+
+            if (productName !== "") {
+                
+                const li = document.createElement("li");
+                
+                li.textContent = productName;
+
+                li.addEventListener("click", function() {
+                    
+                    li.classList.toggle("bought");
+                });
+
+                list.append(li);
+
+                input.value = "";
+            }
+
+            input.focus();
+        }
+
+        button.addEventListener("click", addProduct);
+
+        input.addEventListener("keydown", function(event) {
+        
+            if (event.key === "Enter") {
+                addProduct();
+            }
+        });
+    </script>
+</body>
+</html>
