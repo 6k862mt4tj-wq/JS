@@ -1,0 +1,82 @@
+// services/validService.js
+
+import Ajv from "ajv";
+import { AppError } from "../utils/appError.js";
+import { APP_ERRORS } from "../constants/errors.js";
+
+const ajv = new Ajv({ allErrors: true });
+
+ajv.addFormat("real-date", {
+  type: "string",
+  validate: (dateString) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return false;
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return false;
+    return date.toISOString().startsWith(dateString);
+  }
+});
+
+const schemas = [
+  {
+    $id: "product",
+    type: "object",
+    properties: {
+      username: { type: "string", minLength: 1 },
+      name: { type: "string", minLength: 1, pattern: "^[a-zA-Zа-яА-ЯёЁ0-9\\s\\-]+$" },
+      count: { type: "number", minimum: 0 },
+      price: { type: "number", minimum: 0 },
+      expDate: { type: "string", format: "real-date" }
+    },
+    
+    required: ["username", "name", "count", "price", "expDate"], 
+    additionalProperties: false
+  },
+  {
+    $id: "recipeRequest", 
+    type: "object",
+    properties: {
+      username: { type: "string", minLength: 1 },
+      dishTitle: { 
+        type: "string", 
+        minLength: 2, 
+        maxLength: 100, 
+        pattern: "^[a-zA-Zа-яА-ЯёЁ0-9\\s\\-]+$" 
+      }
+    },
+    required: ["username", "dishTitle"],
+    additionalProperties: false
+  }
+];
+
+schemas.forEach(schema => ajv.addSchema(schema));
+
+function sanitizeData(data) {
+  if (typeof data === "string") {
+    return data.trim().replace(/\s+/g, " ");
+  }
+  
+  if (typeof data === "object" && data !== null && !Array.isArray(data)) {
+    const cleanedObj = { ...data }; 
+    if (typeof cleanedObj.name === "string") {
+      cleanedObj.name = cleanedObj.name.trim().replace(/\s+/g, " ");
+    }
+    if (typeof cleanedObj.username === "string") {
+      cleanedObj.username = cleanedObj.username.trim();
+    }
+    return cleanedObj;
+  }
+  
+  return data;
+}
+
+export function validateData(schemaName, rawData) {
+  const cleanData = sanitizeData(rawData);
+  const isValid = ajv.validate(schemaName, cleanData);
+
+  if (!isValid) {
+    const errorMessage = ajv.errorsText(ajv.errors, { separator: "; ", dataVar: "Поле" });
+    throw new AppError(APP_ERRORS.VALIDATION_ERROR, errorMessage);
+  }
+
+  return cleanData;
+}

@@ -1,0 +1,8 @@
+.env
+node_modules/
+run_tests.js
+*.md
+*.txt
+*.log
+.DS_Store
+.idea/

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Умный холодильник с AI Шеф-поваром."> 
+  <title>Умный холодильник (AI Edition)</title>
+  <link rel="icon" href="FRIDGE.jpg" />
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <h1>Умный холодильник</h1>
+  <div class="container">
+    <div class="box form-section">
+      <h2>Панель управления</h2>
+      <form id="fridgeForm">
+        <label class="auth-label">Ваше имя (Авторизация):
+          <input type="text" id="globalUsername" name="username" placeholder="John (User) или Bill (Admin)" required>
+        </label>
+        <hr>
+        <label>Наименование продукта: <input type="text" name="name" required></label>
+        <label>Количество (0 для удаления): <input type="number" name="count" required></label>
+        <label>Цена за шт ($): <input type="number" name="price" step="0.1" required></label>
+        <label>Срок годности: <input type="date" name="expDate" required></label>
+        <button type="submit">Применить</button>
+      </form>
+      <p id="message"></p>
+    </div>
+
+    <div class="box table-section">
+      <h2>Текущее содержимое</h2>
+      <table id="fridgeTable">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Наименование</th>
+            <th>Кол-во</th>
+            <th>Цена ($)</th>
+            <th>Годен до</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>  </tbody>
+      </table>
+    </div>
+
+    <div class="box ai-section">
+      <h2>👨‍🍳 AI Шеф-повар</h2>
+      <form id="recipeForm">
+        <label>Какое блюдо хотите приготовить?
+          <input type="text" name="dishTitle" placeholder="Например: Паста карбонара" required>
+        </label>
+        <button type="submit">Спросить рецепт</button>
+      </form>
+      <div id="aiResponse" class="ai-response"></div>
+    </div>
+  </div>
+</body>
+</html>
