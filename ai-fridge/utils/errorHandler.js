@@ -1,3 +1,5 @@
+// utils/errorHandler.js
+
 import { AppError } from "./appError.js";
 import { APP_ERRORS } from "../constants/errors.js";
 

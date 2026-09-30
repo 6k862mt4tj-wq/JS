@@ -5,17 +5,19 @@ ai-fridge/
 │   └── recipe.js           # Обработка POST для /api/recipe
 │
 ├── constants/              # КОНСТАНТЫ: 
-│   ├── errors.js           # Ошибки
+│   ├── errors.js           # Словарь ошибок
 │
 ├── services/               # СЕРВИСЫ:  
 │   ├── aiService.js        # Запросы к нейросети и парсер ответа
+│   ├── promptService.js    # Создание промптов для каждого пользователя 
 │   ├── authService.js      # Проверка прав доступа (роли GUEST, USER и т.д.)
-│   ├── fileService.js      # Запись в CSV, чтение HTML-шаблонов
-│   └── validService.js     # Настройка Ajv и схемы валидации
+│   ├── fileService.js      # Запись в CSV, JSON, чтение HTML-шаблонов
+│   ├── arrayService.js     # Изменения в массиве продуктов
+│   └── validService.js     # Ajv и схемы валидации
 │
 ├── utils/                  # УТИЛИТЫ:
 │   ├── appError.js         # Универсальный класс ошибок
-│   └── errorHandler.js     # Центральный переводчик ошибок в JSON-ответы
+│   └── errorHandler.js     # Центральный обработчик ошибок
 │   └── requestParser.js    # Парсеры потоков
 │
 ├── data/                   # БАЗА ДАННЫХ:
@@ -31,5 +33,5 @@ ai-fridge/
 ├── router.js               # МАРШРУТИЗАТОР: Разводка URL адресов по контроллерам
 ├── main.js                 # ТОЧКА ВХОДА: Инициализация сервера (http.createServer)
 │
-├── package.json            # Список зависимостей (ajv и прочее)
+├── package.json            # Список зависимостей
 └── .env                    # Секретные ключи
