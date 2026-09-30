@@ -4,7 +4,10 @@ ai-fridge/
 │   ├── products.js         # Обработка GET/POST для /api/products
 │   └── recipe.js           # Обработка POST для /api/recipe
 │
-├── services/               # СЕРВИСЫ: 
+├── constants/              # КОНСТАНТЫ: 
+│   ├── errors.js           # Ошибки
+│
+├── services/               # СЕРВИСЫ:  
 │   ├── aiService.js        # Запросы к нейросети и парсер ответа
 │   ├── authService.js      # Проверка прав доступа (роли GUEST, USER и т.д.)
 │   ├── fileService.js      # Запись в CSV, чтение HTML-шаблонов
