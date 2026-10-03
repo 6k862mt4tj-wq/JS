@@ -1,7 +1,7 @@
 // data/db.js
 
-import { readFromJsonFile, writeToJsonFile } from "../services/fileService.js";
-import { JSON_FILE } from "../config.js";
+import { readFromJsonFile, writeToJsonFile, writeToCsvFile } from "../services/fileService.js";
+import { JSON_FILE, CSV_FILE } from "../config.js";
 
 export const fridge = [];
 
@@ -16,6 +16,8 @@ export async function loadInitialData() {
 }
 
 export async function saveFridgeData() {
-  
-  await writeToJsonFile(JSON_FILE, fridge);
+  await Promise.all([
+    writeToJsonFile(JSON_FILE, fridge),
+    writeToCsvFile(CSV_FILE, fridge)
+  ]);
 }
