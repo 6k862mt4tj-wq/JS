@@ -37,21 +37,29 @@ export function writeToCsvFile(filePath, data) {
   return currentTask;
 }
 
-export async function readFromJsonFile(filePath) {
-    try {
-        const fileContent = await readFile(filePath, "utf-8");
-        const parsedData = JSON.parse(fileContent);
-      
-        if (!Array.isArray(parsedData)) {
-            console.warn(`[!] Внимание: файл ${filePath} содержит не массив. Данные сброшены.`);
-            return [];
+export function readFromJsonFile(filePath) {
+    const currentTask = writeQueue.then(async () => {
+        try {
+            const fileContent = await readFile(filePath, "utf-8");
+            const parsedData = JSON.parse(fileContent);
+          
+            if (!Array.isArray(parsedData)) {
+                console.warn(`[!] Внимание: файл ${filePath} содержит не массив. Данные сброшены.`);
+                return [];
+            }
+            
+            return parsedData;
+        } catch (error) {
+            console.warn(`[!] Внимание: не удалось прочитать файл ${filePath} (возможно, он еще не создан).`);
+            return []; 
         }
-        
-        return parsedData;
-    } catch (error) {
-        console.warn(`[!] Внимание: не удалось прочитать файл ${filePath} (возможно, он еще не создан).`);
-        return []; 
-    }
+    });
+
+    writeQueue = currentTask.catch((err) => {
+        console.error(`[FS] Ошибка очереди чтения:`, err);
+    });
+
+    return currentTask;
 }
 
 export async function readHtmlFile(filePath) {

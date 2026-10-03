@@ -11,5 +11,7 @@ export class AppError extends Error {
     } else {
       this.isPublic = this.status < 500;
     }
+
+    Error.captureStackTrace(this, this.constructor);
   }
 }

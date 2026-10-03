@@ -24,7 +24,8 @@ export async function processProductData(cleanData) {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  if (new Date(expDate) < today) {
+  const expDateObj = new Date(expDate + "T00:00:00");
+  if (expDateObj < today) {
     throw new AppError(APP_ERRORS.EXPIRED_PRODUCT, `Продукт просрочен (годен до ${expDate}).`);
   }
 
