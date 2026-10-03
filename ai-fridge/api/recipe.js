@@ -7,7 +7,8 @@ import { ROLES } from "../config.js";
 import { APP_ERRORS } from "../constants/errors.js";
 import { AppError } from "../utils/appError.js";
 import { getAuthenticatedUser } from "../services/authService.js";
-import { askAi, parseAiResponse } from "../services/aiService.js"; 
+import { askAi, parseAiResponse } from "../services/aiService.js";
+import { normalizeName } from "../services/arrayService.js"; 
 import { fridge } from "../data/db.js"; 
 
 export async function handleRecipeApi(req, res) {
@@ -18,10 +19,9 @@ export async function handleRecipeApi(req, res) {
     }
 
     const rawBody = await readJson(req);
-
     const user = getAuthenticatedUser(rawBody.username);
+
     if (user.role === ROLES.GUEST) {
-      
       throw new AppError(APP_ERRORS.FORBIDDEN_GUEST, "Гостям недоступна генерация рецептов.");
     }
 
@@ -29,12 +29,21 @@ export async function handleRecipeApi(req, res) {
     const { dishTitle } = cleanData;
     const rawAiText = await askAi(user, dishTitle, fridge);
     const { recipe, ingredients } = parseAiResponse(rawAiText);
+    const normalizedIngredients = {};
+
+    if (ingredients) {
+      for (const [key, value] of Object.entries(ingredients)) {
+        
+        const cleanKey = normalizeName(key);
+        normalizedIngredients[cleanKey] = value;
+      }
+    }
 
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     
     return res.end(JSON.stringify({ 
       recipe: recipe, 
-      ingredients: ingredients 
+      ingredients: normalizedIngredients 
     }));
 
   } catch (error) {

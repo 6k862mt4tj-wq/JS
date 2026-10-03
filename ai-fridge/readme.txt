@@ -13,11 +13,12 @@ ai-fridge/
 │   ├── authService.js      # Проверка прав доступа (роли GUEST, USER и т.д.)
 │   ├── fileService.js      # Запись в CSV, JSON, чтение HTML-шаблонов
 │   ├── arrayService.js     # Изменения в массиве продуктов
-│   └── validService.js     # Ajv и схемы валидации
+│   ├── validService.js     # Ajv и схемы валидации
+│   └── productService.js   # Бизнес логика для базы продуктов
 │
 ├── utils/                  # УТИЛИТЫ:
 │   ├── appError.js         # Универсальный класс ошибок
-│   └── errorHandler.js     # Центральный обработчик ошибок
+│   ├── errorHandler.js     # Центральный обработчик ошибок
 │   └── requestParser.js    # Парсеры потоков
 │
 ├── data/                   # БАЗА ДАННЫХ:

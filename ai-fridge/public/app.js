@@ -1,47 +1,45 @@
-  // public/app.js
+// public/app.js
 
   loadFridgeData();
 
   document.getElementById("fridgeForm").addEventListener("submit", async function(event) {
     event.preventDefault(); 
-    const formData = new FormData(event.target);
-    
+    const form = event.target;
+    const formData = new FormData(form);
+    const currentUsername = formData.get("username").trim();
+
     const dataObj = {
-      username: formData.get("username").trim(),
+      username: currentUsername,
       name: formData.get("name"),
       count: Number(formData.get("count")),
       price: Number(formData.get("price")),
       expDate: formData.get("expDate")
     };
-  
+    
     const isSuccess = await sendProductRequest(dataObj, "Обработка...");
     
     if (isSuccess) {
-      const currentUsername = formData.get("username");
-      event.target.reset(); 
-    
-      document.getElementById("globalUsername").value = currentUsername;
+      
+      form.reset(); 
+      form.elements["username"].value = currentUsername;
+      
+      const globalUser = document.getElementById("globalUsername");
+      if (globalUser) globalUser.value = currentUsername;
     }
   });
 
   document.getElementById("recipeForm").addEventListener("submit", async function(event) {
     event.preventDefault();
-    
     const username = document.getElementById("globalUsername").value.trim();
     const dishTitle = new FormData(event.target).get("dishTitle");
     const responseBox = document.getElementById("aiResponse");
-    const msgEl = document.getElementById("message");
     
-    if (!username) {
-      alert("Пожалуйста, введите Ваше имя в верхней форме авторизации.");
-      return;
-    }
+    if (!username) return alert("Введите Ваше имя для запроса рецепта.");
 
     responseBox.style.display = "block";
-    responseBox.innerHTML = "<i>Нейросеть составляет рецепт... Пожалуйста, подождите.</i>";
+    responseBox.innerHTML = "<i>Нейросеть составляет рецепт...</i>";
 
     try {
-      
       const response = await fetch("/api/recipe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -51,75 +49,105 @@
       const result = await response.json();
       
       if (response.ok) {
-        
         responseBox.innerText = result.recipe;
-
-        if (result.ingredients && Object.keys(result.ingredients).length > 0) {
-          msgEl.className = "msg-pending";
-          msgEl.innerText = "Сохраняем новые продукты в холодильник...";
-
-          try {
-            const batchResponse = await fetch("/api/products", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                username: username,
-                action: "batch_add",
-                items: result.ingredients
-              })
-            });
-
-            const batchResult = await batchResponse.json();
-
-            if (batchResponse.ok) {
-              msgEl.className = "msg-success";
-              msgEl.innerText = batchResult.message || "Ингредиенты от Шефа успешно добавлены!";
+        
+        if (result.ingredients) {
+          
+          for (const [name, reqCount] of Object.entries(result.ingredients)) {
+            
+            const existingTotal = currentFridge
               
-              await loadFridgeData();
-            } else {
-              msgEl.className = "msg-error";
-              msgEl.innerText = "Рецепт получен, но добавить продукты не удалось: " + (batchResult.error?.message || "Ошибка");
+              .filter(p => p.name === name)
+              .reduce((sum, p) => sum + p.count, 0);
+              
+            if (existingTotal < reqCount) {
+              suggestedItems.push({
+                name: name, 
+                count: reqCount - existingTotal,
+                shoppingItem: true 
+              });
             }
-          } catch (batchErr) {
-            console.error("Ошибка при пакетном добавлении:", batchErr);
-            msgEl.className = "msg-error";
-            msgEl.innerText = "Ошибка сети при добавлении продуктов.";
           }
+          renderTable(); 
         }
       } else {
-        responseBox.innerHTML = `<span class="error-text">Ошибка: ${result.error?.message || "Сбой API"}</span>`;
+        responseBox.innerHTML = `<span class="error-text">Ошибка: ${result.error?.message}</span>`;
       }
     } catch (err) {
-      responseBox.innerHTML = `<span class="error-text">Ошибка соединения с сервером</span>`;
+      responseBox.innerHTML = `<span class="error-text">Ошибка соединения</span>`;
     }
   });
+
+let currentFridge = [];
+let suggestedItems = [];
 
 async function loadFridgeData() {
   try {
     const response = await fetch("/api/products");
-    const products = await response.json();
-    const tbody = document.querySelector("#fridgeTable tbody");
-    
-    if (products.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='6' class='empty-fridge'>Холодильник пуст</td></tr>";
-      return;
-    }
-
-    tbody.innerHTML = products.map(p => `
-      <tr>
-        <td class="center-cell"><input type="checkbox" class="product-checkbox" data-name="${p.name}"></td>
-        <td>${p.name}</td>
-        <td>${p.count}</td>
-        <td>${p.price}</td>
-        <td>${p.expDate}</td>
-        <td><button type="button" class="btn-delete" onclick="deleteProduct('${p.name.replace(/'/g, "\\'")}', '${p.expDate}')">🗑️</button></td>
-      </tr>
-    `).join("");
-
+    currentFridge = await response.json();
+    renderTable();
   } catch (err) {
     console.error("Ошибка загрузки:", err);
   }
 }
+
+function renderTable() {
+  const tbody = document.querySelector("#fridgeTable tbody");
+  
+  const allItems = [
+    ...currentFridge.map(p => ({ ...p, shoppingItem: false })),
+    ...suggestedItems
+  ];
+
+  if (allItems.length === 0) {
+    tbody.innerHTML = "<tr><td colspan='6' class='empty-fridge'>Холодильник пуст</td></tr>";
+    return;
+  }
+
+  tbody.innerHTML = allItems.map(p => `
+    <tr style="${p.shoppingItem ? 'background-color: #f8fbff; color: #555;' : ''}">
+      <td class="center-cell">
+        <input type="checkbox" class="product-checkbox" 
+               ${p.shoppingItem ? '' : 'checked disabled'} 
+               onclick="${p.shoppingItem ? `handleCheckboxClick(event, '${p.name.replace(/'/g, "\\'")}', ${p.count})` : 'return false;'}">
+      </td>
+      <td>${p.name}</td>
+      <td>${p.count}</td>
+      <td>${p.price !== undefined ? p.price : '?'}</td>
+      <td>${p.expDate || '<i>Добавьте дату</i>'}</td>
+      <td>
+        ${!p.shoppingItem 
+          ? `<button type="button" class="btn-delete" onclick="deleteProduct('${p.name.replace(/'/g, "\\'")}', '${p.expDate}')">🗑️</button>` 
+          : `<span style="font-size:0.8em; cursor:pointer;" title="Удалить из списка покупок" onclick="removeSuggestion('${p.name.replace(/'/g, "\\'")}')">❌</span>`
+        }
+      </td>
+    </tr>
+  `).join("");
+}
+
+window.handleCheckboxClick = function(event, name, count) {
+  event.preventDefault(); 
+
+  const form = document.getElementById("fridgeForm");
+  
+  form.elements["name"].value = name;
+  form.elements["count"].value = count;
+  
+  const defaultDate = new Date();
+  defaultDate.setDate(defaultDate.getDate() + 7);
+  form.elements["expDate"].value = defaultDate.toISOString().split('T')[0];
+
+  form.scrollIntoView({ behavior: "smooth", block: "center" });
+  form.elements["price"].focus();
+
+  suggestedItems = suggestedItems.filter(item => item.name !== name);
+  renderTable();
+};
+
+window.removeSuggestion = function(name) {
+  suggestedItems = suggestedItems.filter(item => item.name !== name);
+  renderTable();
+};
 
 async function sendProductRequest(dataObj, pendingText) {
   const msgEl = document.getElementById("message");
@@ -138,11 +166,11 @@ async function sendProductRequest(dataObj, pendingText) {
     if (response.ok) {
       msgEl.className = "msg-success";
       msgEl.innerText = result.message;
-      loadFridgeData(); 
+      await loadFridgeData(); 
       return true;     
     } else {
       msgEl.className = "msg-error";
-      msgEl.innerText = result.error?.message || "Неизвестная ошибка";
+      msgEl.innerText = result.error?.message || "Ошибка";
       return false;
     }
   } catch (err) {
@@ -154,19 +182,9 @@ async function sendProductRequest(dataObj, pendingText) {
 
 window.deleteProduct = async function(name, expDate) {
   const username = document.getElementById("globalUsername").value.trim();
-  if (!username) {
-    alert("Укажите Ваше имя (Авторизация) для удаления продукта.");
-    return;
-  }
+  if (!username) return alert("Укажите Ваше имя.");
   if (!confirm(`Удалить продукт "${name}"?`)) return;
 
-  const dataObj = {
-    username: username,
-    name: name,
-    count: 0,
-    price: 0, 
-    expDate: expDate
-  };
-
+  const dataObj = { username, name, count: 0, price: 0, expDate };
   await sendProductRequest(dataObj, "Удаление...");
 };
