@@ -1,5 +1,3 @@
-let currentUI = null;
-
 export function createUI(app) {
     const title = document.createElement("h1");
     title.textContent = "Список продуктов";
@@ -93,7 +91,7 @@ export function createUI(app) {
         actions
     );
 
-    currentUI = {
+    return {
         app,
         form,
         input,
@@ -114,11 +112,9 @@ export function createUI(app) {
         saveDraftButton,
         cancelDraftButton
     };
-
-    return currentUI;
 }
 
-export function updateMode(isDraft, elements = currentUI) {
+export function updateMode(isDraft, elements) {
     if (!elements) return;
 
     const {

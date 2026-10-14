@@ -12,6 +12,8 @@ import { createUI, renderProducts, updateMode } from "./ui.js";
 
 const app = document.querySelector("#app");
 
+const uiElements = createUI(app);
+
 const {
     form,
     input,
@@ -24,7 +26,7 @@ const {
     createDraftButton,
     saveDraftButton,
     cancelDraftButton
-} = createUI(app);
+} = uiElements;
 
 let activeFilter = "all";
 
@@ -35,7 +37,7 @@ function updateFilterButtons() {
 }
 
 function render() {
-    updateMode(isDraftMode());
+    updateMode(isDraftMode(), uiElements);
 
     const currentProducts = getCurrentProducts();
     let visibleProducts = currentProducts;
