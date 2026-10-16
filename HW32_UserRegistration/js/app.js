@@ -2,13 +2,13 @@
 
 try {
     const userManager = createUserManager();
-    const registerButton = document.querySelector('#submit');
+    const form = document.querySelector('#registrationForm');
     const nameInput = document.querySelector('#nameInput');
     const ageInput = document.querySelector('#ageInput');
     const userListContainer = document.querySelector('#userList');
     const message = document.querySelector('#message'); 
 
-    registerButton.addEventListener('click', (event) => {
+    form.addEventListener('submit', (event) => {
         event.preventDefault(); 
         
         try {
