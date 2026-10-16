@@ -2,7 +2,7 @@
 
 function createUser({ name, age, ...rest }) {
   
-    if (!name || name.trim() === '') {
+    if (typeof name !== 'string' || name.trim() === '') {
         throw new Error('Name is required');
     }
 

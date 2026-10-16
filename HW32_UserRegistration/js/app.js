@@ -14,26 +14,19 @@ try {
         try {
             const name = nameInput.value.trim();
             const age = ageInput.value.trim();
-
-            if (age === '') {
-                throw new Error('Age is required');
-            } else if (isNaN(Number(age))) {
-                throw new Error('Age must be a number');
-            }
-            const ageNum = Number(age);
+            const user = createUser({ name: name, age: age });
 
             let role;
-            if (ageNum >= 0 && ageNum <= 13) {
+            if (user.age >= 0 && user.age <= 13) {
                 role = 'child';
-            } else if (ageNum > 13 && ageNum <= 19) {
+            } else if (user.age > 13 && user.age <= 19) {
                 role = 'teenager';
-            } else if (ageNum > 19 && ageNum <= 64) {
+            } else if (user.age > 19 && user.age <= 64) {
                 role = 'adult';
             } else {
                 role = 'senior';
             }
-
-            const user = createUser({ name: name, age: ageNum, role: role });
+            user.role = role;
             
             userManager.addUser(user);
 
@@ -47,7 +40,7 @@ try {
 
             nameInput.value = '';
             ageInput.value = '';
-            focusInput(nameInput);
+            nameInput.focus();
             
         } catch (error) {
             console.error('Error during registration:', error.message);
